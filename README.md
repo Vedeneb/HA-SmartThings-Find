@@ -7,9 +7,10 @@ Currently the integration creates three entities for each device:
 * `sensor`: Represents the battery level of the tag/device (not supported for earbuds!)
 * `button`: Allows you to ring the tag/device.
 
+![screenshot](media/screenshot_1.png)
+
 This integration does **not** allow you to perform actions based on button presses on the SmartTag! There are other ways to do that.
 
-![alt text](media/screenshot_1.png)
 
 ## ⚠️ Warning/Disclaimer ⚠️
 
