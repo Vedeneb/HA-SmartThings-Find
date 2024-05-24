@@ -9,6 +9,8 @@ Currently the integration creates three entities for each device:
 
 This integration does **not** allow you to perform actions based on button presses on the SmartTag! There are other ways to do that.
 
+![alt text](media/screenshot_1.png)
+
 ## ⚠️ Warning/Disclaimer ⚠️
 
 - **Work in Progress**: This integration is still under development, and features may change without notice.
