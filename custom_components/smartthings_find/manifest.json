@@ -1,0 +1,13 @@
+{
+  "domain": "smartthings_find",
+  "name": "SmartThings Find",
+  "after_dependencies": ["http"],
+  "version": "0.0.2",
+  "documentation": "https://github.com/Vedeneb/HA-SmartThings-Find",
+  "integration_type": "hub",
+  "dependencies": [],
+  "codeowners": ["@Vedeneb"],
+  "requirements": ["requests", "qrcode"],
+  "iot_class": "cloud_polling",
+  "config_flow": true
+}

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "abort": {
+      "reauth_successful": "Erfolgreich authentifiziert."
+    },
+    "progress": {
+      "task_stage_one": "Vorbereitung läuft, bitte warten...",
+      "task_stage_two": "Bitte scanne den QR Code mit deinem Galaxy-Gerät, um dich anzumelden. Alternativ kannst du dich direkt im Browser anmelden, indum du [hier]({url}) klickst. \n\n![QR Code](data:image/png;base64,{qr_code})\n\nCode kann nicht gescannt werden? Gehe auf [signin.samsung.com/key](https://signin.samsung.com/key/) und gib den folgenden Code ein:\n\n## ```{code}```\n"
+    }
+  }
+}
