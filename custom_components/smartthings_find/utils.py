@@ -237,15 +237,18 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession) -> li
         list: A list of devices if successful, empty list otherwise.
     """
     url = f"{URL_DEVICE_LIST}?_csrf={hass.data[DOMAIN]['_csrf']}"
-    async with session.post(url) as response:
+    async with session.post(url, headers = {'Accept': 'application/json'}, data={}) as response:
         if response.status != 200:
             _LOGGER.error(f"Failed to retrieve devices [{response.status}]: {await response.text()}")
             if response.status == 404:
                 _LOGGER.warn(f"Received 404 while trying to fetch devices -> Triggering reauth")
                 raise ConfigEntryAuthFailed("Request to get device list failed: 404")
             return []
-        response_raw = await response.text()
-        response_json = json.loads(response_raw)
+        _LOGGER.debug(f"Headers sent: {response.request_info.headers}")
+        _LOGGER.debug(f"Headers received: {response.headers}")
+        #response_raw = await response.text()
+        #response_json = json.loads(response_raw)
+        response_json = await response.json()
         devices_data = response_json["deviceList"]
         devices = []
         for device in devices_data:
@@ -293,12 +296,12 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
             # _LOGGER.debug(f"[{dev_name}] Update request response ({response.status}): {await response.text()}")
             pass
 
-        async with session.post(f"{URL_SET_LAST_DEVICE}?_csrf={csrf_token}", json=set_last_payload) as response:
+        async with session.post(f"{URL_SET_LAST_DEVICE}?_csrf={csrf_token}", json=set_last_payload, headers = {'Accept': 'application/json'}) as response:
             _LOGGER.debug(f"[{dev_name}] Location response ({response.status})")
             if response.status == 200:
-                data_raw = await response.text()
+                #data_raw = await response.text()
                 # _LOGGER.debug(f"[{dev_name}] Dev-Tracker HTTP response data: {data_raw}")
-                data = json.loads(data_raw)
+                data = await response.json()
                 res = {
                     "dev_name": dev_name,
                     "dev_id": dev_id,
