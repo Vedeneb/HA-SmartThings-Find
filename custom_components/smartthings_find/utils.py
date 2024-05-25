@@ -361,10 +361,10 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
                             elif 'encLocation' in op:
                                 loc = op['encLocation']
                                 if 'encrypted' in loc and loc['encrypted']:
-                                    _LOGGER.warn(f"[{dev_name}] Ignoring encrypted location ({op['oprnType']})")
+                                    _LOGGER.info(f"[{dev_name}] Ignoring encrypted location ({op['oprnType']})")
                                     continue
                                 elif 'gpsUtcDt' not in loc:
-                                    _LOGGER.warn(f"[{dev_name}] Ignoring location with missing date ({op['oprnType']})")
+                                    _LOGGER.info(f"[{dev_name}] Ignoring location with missing date ({op['oprnType']})")
                                     continue
                                 else:
                                     utcDate = parse_stf_date(loc['gpsUtcDt'])
@@ -396,7 +396,7 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
                     else:
                         _LOGGER.warn(f"[{dev_name}] No useable location-operation found")
 
-                    _LOGGER.debug(f"    --> {dev_name} used operation:\t{'NONE' if not used_op else used_op['oprnType']}")
+                    _LOGGER.debug(f"    --> {dev_name} used operation: {'NONE' if not used_op else used_op['oprnType']}")
 
                 else:
                     _LOGGER.warn(f"[{dev_name}] No operation found in response; marking update failed")
