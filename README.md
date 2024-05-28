@@ -29,10 +29,21 @@ If ringing your tag does not work, first try to let it ring from the [SmartThing
 
 ## Installation Instructions
 
-1. Download the `custom_components/smartthings_find` directory to your Home Assistant configuration directory.
-2. Restart Home Assistant.
+### Using HACS
 
-Note: HACS support is coming soon!
+1. Add this repository as a custom repository in HACS. Either by manually adding `https://github.com/Vedeneb/HA-SmartThings-Find` with category `integration` or simply click the following button:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Vedeneb&repository=HA-SmartThings-Find&category=integration)
+
+2. Search for "SmartThings Find" in HACS and install the integration
+3. Restart Home Assistant
+4. Proceed to [Setup instructions](#setup-instructions)
+
+### Manual install
+
+1. Download the `custom_components/smartthings_find` directory to your Home Assistant configuration directory
+2. Restart Home Assistant
+3. Proceed to [Setup instructions](#setup-instructions)
 
 ## Setup Instructions
 
@@ -68,7 +79,7 @@ For support, please create an issue on the GitHub repository.
 
 ## Roadmap
 
-- HACS support
+- ~~HACS support~~ ✅
 - Service to let a device ring
 - Service to make a device stop ringing (for devices that support this feature)
 - Allow adding two instances of this integration (two Samsung Accounts)
