@@ -244,10 +244,6 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession) -> li
                 _LOGGER.warn(f"Received 404 while trying to fetch devices -> Triggering reauth")
                 raise ConfigEntryAuthFailed("Request to get device list failed: 404")
             return []
-        _LOGGER.debug(f"Headers sent: {response.request_info.headers}")
-        _LOGGER.debug(f"Headers received: {response.headers}")
-        #response_raw = await response.text()
-        #response_json = json.loads(response_raw)
         response_json = await response.json()
         devices_data = response_json["deviceList"]
         devices = []
@@ -299,8 +295,6 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
         async with session.post(f"{URL_SET_LAST_DEVICE}?_csrf={csrf_token}", json=set_last_payload, headers = {'Accept': 'application/json'}) as response:
             _LOGGER.debug(f"[{dev_name}] Location response ({response.status})")
             if response.status == 200:
-                #data_raw = await response.text()
-                # _LOGGER.debug(f"[{dev_name}] Dev-Tracker HTTP response data: {data_raw}")
                 data = await response.json()
                 res = {
                     "dev_name": dev_name,
