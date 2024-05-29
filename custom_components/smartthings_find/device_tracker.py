@@ -110,4 +110,9 @@ class SmartThingsDeviceTracker(DeviceTrackerEntity):
         if self.subDeviceName:
             used_op, used_loc = get_sub_location(tag_data['ops'], self.subDeviceName)
             tag_data = tag_data | used_op | used_loc
+        used_loc = tag_data.get('used_loc', {})
+        if used_loc:
+            tag_data['last_seen'] = used_loc.get('gps_date', None)
+        else:
+            tag_data['last_seen'] = None
         return tag_data | device_data
