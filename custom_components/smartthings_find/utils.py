@@ -14,6 +14,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import device_registry
 
 from .const import DOMAIN, BATTERY_LEVELS
 
@@ -248,8 +249,13 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession) -> li
         devices_data = response_json["deviceList"]
         devices = []
         for device in devices_data:
+            identifier = (DOMAIN, device['dvceID'])
+            ha_dev = device_registry.async_get(hass).async_get_device({identifier})
+            if ha_dev and ha_dev.disabled:
+                _LOGGER.debug(f"Ignoring disabled device: '{device['modelName']}' (disabled by {ha_dev.disabled_by})")
+                continue
             ha_dev_info = DeviceInfo(
-                identifiers={(DOMAIN, device['dvceID'])},
+                identifiers={identifier},
                 manufacturer="Samsung",
                 name=device['modelName'],
                 model=device['modelID'],

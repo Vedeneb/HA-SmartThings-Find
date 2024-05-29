@@ -48,7 +48,7 @@ class DeviceBatterySensor(SensorEntity):
             _LOGGER.info(f"battery sensor: tag_data none for '{self.name}'; rendering state unavailable")
             return False
         if not tag_data['update_success']:
-            _LOGGER.info(f"Last update for battery sensor'{self.name}' failed; rendering state unavailable")
+            _LOGGER.info(f"Last update for battery sensor '{self.name}' failed; rendering state unavailable")
             return False
         return True
     
