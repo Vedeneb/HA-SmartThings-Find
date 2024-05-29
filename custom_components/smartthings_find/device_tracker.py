@@ -43,9 +43,14 @@ class SmartThingsDeviceTracker(DeviceTrackerEntity):
 
         if 'icons' in device['data'] and 'coloredIcon' in device['data']['icons']:
             self._attr_entity_picture = device['data']['icons']['coloredIcon']
-            
         self.async_update = coordinator.async_add_listener(self.async_write_ha_state)
     
+    def async_write_ha_state(self):
+        if not self.enabled:
+            _LOGGER.debug(f"Ignoring state write request for disabled entity '{self.entity_id}'")
+            return
+        return super().async_write_ha_state()
+
     @property
     def available(self) -> bool:
         """Return true if the device is available."""
