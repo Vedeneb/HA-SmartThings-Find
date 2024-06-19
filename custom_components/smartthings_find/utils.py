@@ -193,7 +193,7 @@ async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
         _LOGGER.error(f"An error occurred during the login process (stage 2): {e}", exc_info=True)
         return None
 
-async def fetch_csrf(hass: HomeAssistant, session: aiohttp.ClientSession):
+async def fetch_csrf(hass: HomeAssistant, session: aiohttp.ClientSession, entry_id: str):
     """
     Retrieves the _csrf-Token which needs to be sent with each following request.
 
@@ -212,7 +212,7 @@ async def fetch_csrf(hass: HomeAssistant, session: aiohttp.ClientSession):
         if response.status == 200:
             csrf_token = response.headers.get("_csrf")
             if csrf_token:
-                hass.data[DOMAIN]["_csrf"] = csrf_token
+                hass.data[DOMAIN][entry_id]["_csrf"] = csrf_token
                 _LOGGER.info("Successfully fetched new CSRF Token")
                 return
             else:
@@ -226,7 +226,7 @@ async def fetch_csrf(hass: HomeAssistant, session: aiohttp.ClientSession):
 
     raise ConfigEntryAuthFailed(err_msg)
 
-async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession) -> list:
+async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession, entry_id: str) -> list:
     """
     Sends a request to the SmartThings Find API to retrieve a list of devices associated with the user's account.
 
@@ -237,7 +237,7 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession) -> li
     Returns:
         list: A list of devices if successful, empty list otherwise.
     """
-    url = f"{URL_DEVICE_LIST}?_csrf={hass.data[DOMAIN]['_csrf']}"
+    url = f"{URL_DEVICE_LIST}?_csrf={hass.data[DOMAIN][entry_id]['_csrf']}"
     async with session.post(url, headers = {'Accept': 'application/json'}, data={}) as response:
         if response.status != 200:
             _LOGGER.error(f"Failed to retrieve devices [{response.status}]: {await response.text()}")
@@ -265,7 +265,7 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession) -> li
             _LOGGER.debug(f"Adding device: {device['modelName']}")
         return devices
 
-async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSession, dev_data: dict) -> dict:
+async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSession, dev_data: dict, entry_id: str) -> dict:
     """
     Sends requests to update the device's location and retrieves the current location data for the specified device.
 
@@ -291,7 +291,7 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
         "usrId": dev_data['usrId']
     }
 
-    csrf_token = hass.data[DOMAIN]["_csrf"]
+    csrf_token = hass.data[DOMAIN][entry_id]["_csrf"]
 
     try:
         async with session.post(f"{URL_REQUEST_LOC_UPDATE}?_csrf={csrf_token}", json=update_payload) as response:

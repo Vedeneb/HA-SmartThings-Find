@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up SmartThings Find button entities."""
-    devices = hass.data[DOMAIN]["devices"]
+    devices = hass.data[DOMAIN][entry.entry_id]["devices"]
     entities = []
     for device in devices:
         entities += [RingButton(hass, device)]
@@ -37,8 +37,9 @@ class RingButton(ButtonEntity):
 
     async def async_press(self):
         """Handle the button press."""
-        session = self.hass.data[DOMAIN]["session"]
-        csrf_token = self.hass.data[DOMAIN]["_csrf"]
+        entry_id = self.registry_entry.config_entry_id
+        session = self.hass.data[DOMAIN][entry_id]["session"]
+        csrf_token = self.hass.data[DOMAIN][entry_id]["_csrf"]
         ring_payload = {
             "dvceId": self.device['dvceID'],
             "operation": "RING",
@@ -57,6 +58,6 @@ class RingButton(ButtonEntity):
                     _LOGGER.debug(f"Response: {await response.text()}")
                 else:
                     # Fetch a new CSRF token to make sure we're still logged in
-                    await fetch_csrf(self.hass, session)
+                    await fetch_csrf(self.hass, session, entry_id)
         except Exception as e:
             _LOGGER.error(f"Exception occurred while ringing '{self.device['modelName']}': %s", e)

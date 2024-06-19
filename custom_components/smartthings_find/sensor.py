@@ -13,8 +13,8 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up SmartThings Find sensor entities."""
-    devices = hass.data[DOMAIN]["devices"]
-    coordinator = hass.data[DOMAIN]["coordinator"]
+    devices = hass.data[DOMAIN][entry.entry_id]["devices"]
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     entities = []
     for device in devices:
         entities += [DeviceBatterySensor(hass, coordinator, device)]
