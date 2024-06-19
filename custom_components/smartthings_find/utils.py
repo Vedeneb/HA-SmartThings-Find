@@ -17,7 +17,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry
 
-from .const import DOMAIN, BATTERY_LEVELS
+from .const import DOMAIN, BATTERY_LEVELS, CONF_ACTIVE_MODE_SMARTTAGS, CONF_ACTIVE_MODE_OTHERS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ URL_GET_CSRF = "https://smartthingsfind.samsung.com/chkLogin.do"
 URL_DEVICE_LIST = "https://smartthingsfind.samsung.com/device/getDeviceList.do"
 URL_REQUEST_LOC_UPDATE = "https://smartthingsfind.samsung.com/dm/addOperation.do"
 URL_SET_LAST_DEVICE = "https://smartthingsfind.samsung.com/device/setLastSelect.do"
+
 
 async def do_login_stage_one(hass: HomeAssistant) -> tuple:
     """
@@ -57,14 +58,16 @@ async def do_login_stage_one(hass: HomeAssistant) -> tuple:
         # SmartThings find.
         async with session.get(URL_PRE_SIGNIN.format(state=state)) as res:
             if res.status != 200:
-                _LOGGER.error(f"Pre-login request failed with status {res.status}")
+                _LOGGER.error(
+                    f"Pre-login request failed with status {res.status}")
                 return None
             _LOGGER.debug(f"Step 1: Pre-Login: Status Code: {res.status}")
 
         # Load the "Login with QR-Code"-page
         async with session.get(URL_QR_CODE_SIGNIN) as res:
             if res.status != 200:
-                _LOGGER.error(f"QR code URL request failed with status {res.status}, Response: {text[:250]}...")
+                _LOGGER.error(
+                    f"QR code URL request failed with status {res.status}, Response: {text[:250]}...")
                 return None
             text = await res.text()
             _LOGGER.debug(f"Step 2: QR-Code URL: Status Code: {res.status}")
@@ -81,8 +84,10 @@ async def do_login_stage_one(hass: HomeAssistant) -> tuple:
 
         return session, qr_url
     except Exception as e:
-        _LOGGER.error(f"An error occurred during the login process (stage 1): {e}", exc_info=True)
+        _LOGGER.error(
+            f"An error occurred during the login process (stage 1): {e}", exc_info=True)
         return None
+
 
 async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
     """
@@ -107,10 +112,12 @@ async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
         # Fetch the _csrf token. This needs to be sent with each QR-Poll-Request
         async with session.get(URL_SIGNIN_XHR) as res:
             if res.status != 200:
-                _LOGGER.error(f"XHR login request failed with status {res.status}")
+                _LOGGER.error(
+                    f"XHR login request failed with status {res.status}")
                 return None
             json_res = await res.json()
-            _LOGGER.debug(f"Step 3: XHR Login: Status Code: {res.status}, Response: {json_res}")
+            _LOGGER.debug(
+                f"Step 3: XHR Login: Status Code: {res.status}, Response: {json_res}")
 
         csrf_token = json_res.get('_csrf', {}).get('token')
         if not csrf_token:
@@ -135,10 +142,12 @@ async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
                 await asyncio.sleep(2)
                 async with session.post(URL_QR_POLL, json={}, headers={'X-Csrf-Token': csrf_token}) as res:
                     if res.status != 200:
-                        _LOGGER.error(f"QR check request failed with status {res.status}")
+                        _LOGGER.error(
+                            f"QR check request failed with status {res.status}")
                         continue
                     js = await res.json()
-                    _LOGGER.debug(f"Step 4: QR CHECK: Status Code: {res.status}, Response: {js}")
+                    _LOGGER.debug(
+                        f"Step 4: QR CHECK: Status Code: {res.status}, Response: {js}")
 
                 if js.get('rtnCd') == "SUCCESS":
                     next_url = js.get('nextURL')
@@ -156,7 +165,8 @@ async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
         # for SmartThings Find (which uses it's own JSESSIONID).
         async with session.get(URL_SIGNIN_SUCCESS.format(next_url=next_url)) as res:
             if res.status != 200:
-                _LOGGER.error(f"Login success URL request failed with status {res.status}")
+                _LOGGER.error(
+                    f"Login success URL request failed with status {res.status}")
                 return None
             text = await res.text()
             _LOGGER.debug(f"Step 5: Login success: Status Code: {res.status}")
@@ -166,9 +176,11 @@ async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
         # https://smartthingsfind.samsung.com/login.do?auth_server_url=eu-auth2.samsungosp.com
         #    &code=[...]&code_expires_in=300&state=[state we generated above]
         #    &api_server_url=eu-auth2.samsungosp.com
-        match = re.search(r'window\.location\.href\s*=\s*[\'"]([^\'"]+)[\'"]', text)
+        match = re.search(
+            r'window\.location\.href\s*=\s*[\'"]([^\'"]+)[\'"]', text)
         if not match:
-            _LOGGER.error("Redirect URL not found in the login success response")
+            _LOGGER.error(
+                "Redirect URL not found in the login success response")
             return None
 
         redirect_url = match.group(1)
@@ -178,11 +190,14 @@ async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
         # which is what actually authenticates us for SmartThings Find.
         async with session.get(redirect_url) as res:
             if res.status != 200:
-                _LOGGER.error(f"Redirect URL request failed with status {res.status}")
+                _LOGGER.error(
+                    f"Redirect URL request failed with status {res.status}")
                 return None
-            _LOGGER.debug(f"Step 6: Follow redirect URL: Status Code: {res.status}")
+            _LOGGER.debug(
+                f"Step 6: Follow redirect URL: Status Code: {res.status}")
 
-        jsessionid = session.cookie_jar.filter_cookies('https://smartthingsfind.samsung.com').get('JSESSIONID')
+        jsessionid = session.cookie_jar.filter_cookies(
+            'https://smartthingsfind.samsung.com').get('JSESSIONID')
         if not jsessionid:
             _LOGGER.error("JSESSIONID not found in cookies")
             return None
@@ -191,8 +206,10 @@ async def do_login_stage_two(session: aiohttp.ClientSession) -> str:
         return jsessionid.value
 
     except Exception as e:
-        _LOGGER.error(f"An error occurred during the login process (stage 2): {e}", exc_info=True)
+        _LOGGER.error(
+            f"An error occurred during the login process (stage 2): {e}", exc_info=True)
         return None
+
 
 async def fetch_csrf(hass: HomeAssistant, session: aiohttp.ClientSession, entry_id: str):
     """
@@ -204,7 +221,7 @@ async def fetch_csrf(hass: HomeAssistant, session: aiohttp.ClientSession, entry_
     Args:
         hass (HomeAssistant): Home Assistant instance.
         session (aiohttp.ClientSession): The current session.
-        
+
     Raises:
         ConfigEntryAuthFailed: If the CSRF token is not found or if the authentication fails.
     """
@@ -227,6 +244,7 @@ async def fetch_csrf(hass: HomeAssistant, session: aiohttp.ClientSession, entry_
 
     raise ConfigEntryAuthFailed(err_msg)
 
+
 async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession, entry_id: str) -> list:
     """
     Sends a request to the SmartThings Find API to retrieve a list of devices associated with the user's account.
@@ -239,12 +257,14 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession, entry
         list: A list of devices if successful, empty list otherwise.
     """
     url = f"{URL_DEVICE_LIST}?_csrf={hass.data[DOMAIN][entry_id]['_csrf']}"
-    async with session.post(url, headers = {'Accept': 'application/json'}, data={}) as response:
+    async with session.post(url, headers={'Accept': 'application/json'}, data={}) as response:
         if response.status != 200:
             _LOGGER.error(f"Failed to retrieve devices [{response.status}]: {await response.text()}")
             if response.status == 404:
-                _LOGGER.warn(f"Received 404 while trying to fetch devices -> Triggering reauth")
-                raise ConfigEntryAuthFailed("Request to get device list failed: 404")
+                _LOGGER.warn(
+                    f"Received 404 while trying to fetch devices -> Triggering reauth")
+                raise ConfigEntryAuthFailed(
+                    "Request to get device list failed: 404")
             return []
         response_json = await response.json()
         devices_data = response_json["deviceList"]
@@ -252,11 +272,14 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession, entry
         for device in devices_data:
             # Double unescaping required. Example:
             # "Benedev&amp;#39;s S22" first becomes "Benedev&#39;s S22" and then "Benedev's S22"
-            device['modelName'] = html.unescape(html.unescape(device['modelName']))
+            device['modelName'] = html.unescape(
+                html.unescape(device['modelName']))
             identifier = (DOMAIN, device['dvceID'])
-            ha_dev = device_registry.async_get(hass).async_get_device({identifier})
+            ha_dev = device_registry.async_get(
+                hass).async_get_device({identifier})
             if ha_dev and ha_dev.disabled:
-                _LOGGER.debug(f"Ignoring disabled device: '{device['modelName']}' (disabled by {ha_dev.disabled_by})")
+                _LOGGER.debug(
+                    f"Ignoring disabled device: '{device['modelName']}' (disabled by {ha_dev.disabled_by})")
                 continue
             ha_dev_info = DeviceInfo(
                 identifiers={identifier},
@@ -268,6 +291,7 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession, entry
             devices += [{"data": device, "ha_dev_info": ha_dev_info}]
             _LOGGER.debug(f"Adding device: {device['modelName']}")
         return devices
+
 
 async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSession, dev_data: dict, entry_id: str) -> dict:
     """
@@ -298,12 +322,23 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
     csrf_token = hass.data[DOMAIN][entry_id]["_csrf"]
 
     try:
-        async with session.post(f"{URL_REQUEST_LOC_UPDATE}?_csrf={csrf_token}", json=update_payload) as response:
-            # _LOGGER.debug(f"[{dev_name}] Update request response ({response.status}): {await response.text()}")
-            pass
+        active = (
+            (dev_data['deviceTypeCode'] == 'TAG' and hass.data[DOMAIN][entry_id][CONF_ACTIVE_MODE_SMARTTAGS]) or
+            (dev_data['deviceTypeCode'] != 'TAG' and hass.data[DOMAIN]
+             [entry_id][CONF_ACTIVE_MODE_OTHERS])
+        )
 
-        async with session.post(f"{URL_SET_LAST_DEVICE}?_csrf={csrf_token}", json=set_last_payload, headers = {'Accept': 'application/json'}) as response:
-            _LOGGER.debug(f"[{dev_name}] Location response ({response.status})")
+        if active:
+            _LOGGER.debug("Active mode; requesting location update now")
+            async with session.post(f"{URL_REQUEST_LOC_UPDATE}?_csrf={csrf_token}", json=update_payload) as response:
+                # _LOGGER.debug(f"[{dev_name}] Update request response ({response.status}): {await response.text()}")
+                pass
+        else:
+            _LOGGER.debug("Passive mode; not requesting location update")
+
+        async with session.post(f"{URL_SET_LAST_DEVICE}?_csrf={csrf_token}", json=set_last_payload, headers={'Accept': 'application/json'}) as response:
+            _LOGGER.debug(
+                f"[{dev_name}] Location response ({response.status})")
             if response.status == 200:
                 data = await response.json()
                 res = {
@@ -339,60 +374,74 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
                                 utcDate = None
 
                                 if 'extra' in op and 'gpsUtcDt' in op['extra']:
-                                    utcDate = parse_stf_date(op['extra']['gpsUtcDt'])
+                                    utcDate = parse_stf_date(
+                                        op['extra']['gpsUtcDt'])
                                 else:
-                                    _LOGGER.error(f"[{dev_name}] No UTC date found for operation '{op['oprnType']}', this should not happen! OP: {json.dumps(op)}")
+                                    _LOGGER.error(
+                                        f"[{dev_name}] No UTC date found for operation '{op['oprnType']}', this should not happen! OP: {json.dumps(op)}")
                                     continue
 
                                 if used_loc['gps_date'] and used_loc['gps_date'] >= utcDate:
-                                    _LOGGER.debug(f"[{dev_name}] Ignoring location older than the previous ({op['oprnType']})")
+                                    _LOGGER.debug(
+                                        f"[{dev_name}] Ignoring location older than the previous ({op['oprnType']})")
                                     continue
 
                                 locFound = False
                                 if 'latitude' in op:
-                                    used_loc['latitude'] = float(op['latitude'])
+                                    used_loc['latitude'] = float(
+                                        op['latitude'])
                                     locFound = True
                                 if 'longitude' in op:
-                                    used_loc['longitude'] = float(op['longitude'])
+                                    used_loc['longitude'] = float(
+                                        op['longitude'])
                                     locFound = True
 
                                 if not locFound:
-                                    _LOGGER.warn(f"[{dev_name}] Found no coordinates in operation '{op['oprnType']}'")
+                                    _LOGGER.warn(
+                                        f"[{dev_name}] Found no coordinates in operation '{op['oprnType']}'")
                                 else:
                                     res['location_found'] = True
 
-                                used_loc['gps_accuracy'] = calc_gps_accuracy(op.get('horizontalUncertainty'), op.get('verticalUncertainty'))
+                                used_loc['gps_accuracy'] = calc_gps_accuracy(
+                                    op.get('horizontalUncertainty'), op.get('verticalUncertainty'))
                                 used_loc['gps_date'] = utcDate
                                 used_op = op
 
                             elif 'encLocation' in op:
                                 loc = op['encLocation']
                                 if 'encrypted' in loc and loc['encrypted']:
-                                    _LOGGER.info(f"[{dev_name}] Ignoring encrypted location ({op['oprnType']})")
+                                    _LOGGER.info(
+                                        f"[{dev_name}] Ignoring encrypted location ({op['oprnType']})")
                                     continue
                                 elif 'gpsUtcDt' not in loc:
-                                    _LOGGER.info(f"[{dev_name}] Ignoring location with missing date ({op['oprnType']})")
+                                    _LOGGER.info(
+                                        f"[{dev_name}] Ignoring location with missing date ({op['oprnType']})")
                                     continue
                                 else:
                                     utcDate = parse_stf_date(loc['gpsUtcDt'])
                                     if used_loc['gps_date'] and used_loc['gps_date'] >= utcDate:
-                                        _LOGGER.debug(f"[{dev_name}] Ignoring location older than the previous ({op['oprnType']})")
+                                        _LOGGER.debug(
+                                            f"[{dev_name}] Ignoring location older than the previous ({op['oprnType']})")
                                         continue
                                     else:
                                         locFound = False
                                         if 'latitude' in loc:
-                                            used_loc['latitude'] = float(loc['latitude'])
+                                            used_loc['latitude'] = float(
+                                                loc['latitude'])
                                             locFound = True
                                         if 'longitude' in loc:
-                                            used_loc['longitude'] = float(loc['longitude'])
+                                            used_loc['longitude'] = float(
+                                                loc['longitude'])
                                             locFound = True
                                         else:
                                             res['location_found'] = True
 
                                         if not locFound:
-                                            _LOGGER.warn(f"[{dev_name}] Found no coordinates in operation '{op['oprnType']}'")
+                                            _LOGGER.warn(
+                                                f"[{dev_name}] Found no coordinates in operation '{op['oprnType']}'")
 
-                                        used_loc['gps_accuracy'] = calc_gps_accuracy(loc.get('horizontalUncertainty'), loc.get('verticalUncertainty'))
+                                        used_loc['gps_accuracy'] = calc_gps_accuracy(
+                                            loc.get('horizontalUncertainty'), loc.get('verticalUncertainty'))
                                         used_loc['gps_date'] = utcDate
                                         used_op = op
                                     continue
@@ -401,16 +450,20 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
                         res['used_op'] = used_op
                         res['used_loc'] = used_loc
                     else:
-                        _LOGGER.warn(f"[{dev_name}] No useable location-operation found")
+                        _LOGGER.warn(
+                            f"[{dev_name}] No useable location-operation found")
 
-                    _LOGGER.debug(f"    --> {dev_name} used operation: {'NONE' if not used_op else used_op['oprnType']}")
+                    _LOGGER.debug(
+                        f"    --> {dev_name} used operation: {'NONE' if not used_op else used_op['oprnType']}")
 
                 else:
-                    _LOGGER.warn(f"[{dev_name}] No operation found in response; marking update failed")
+                    _LOGGER.warn(
+                        f"[{dev_name}] No operation found in response; marking update failed")
                     res['update_success'] = False
                 return res
             else:
-                _LOGGER.error(f"[{dev_name}] Failed to fetch device data ({response.status})")
+                _LOGGER.error(
+                    f"[{dev_name}] Failed to fetch device data ({response.status})")
                 res_text = await response.text()
                 _LOGGER.debug(f"[{dev_name}] Full response: '{res_text}'")
 
@@ -418,14 +471,17 @@ async def get_device_location(hass: HomeAssistant, session: aiohttp.ClientSessio
                 # enough at this point. Instead we have to ask the user to  go through
                 # the whole auth flow again
                 if res_text == 'Logout' or response.status == 401:
-                    raise ConfigEntryAuthFailed(f"Session not valid anymore, received status_code of {response.status} with response '{res_text}'")
+                    raise ConfigEntryAuthFailed(
+                        f"Session not valid anymore, received status_code of {response.status} with response '{res_text}'")
 
     except ConfigEntryAuthFailed as e:
         raise
     except Exception as e:
-        _LOGGER.error(f"[{dev_name}] Exception occurred while fetching location data for tag '{dev_name}': {e}", exc_info=True)
+        _LOGGER.error(
+            f"[{dev_name}] Exception occurred while fetching location data for tag '{dev_name}': {e}", exc_info=True)
 
     return None
+
 
 def calc_gps_accuracy(hu: float, vu: float) -> float:
     """
@@ -444,6 +500,7 @@ def calc_gps_accuracy(hu: float, vu: float) -> float:
         return round((float(hu)**2 + float(vu)**2) ** 0.5, 1)
     except ValueError:
         return None
+
 
 def get_sub_location(ops: list, subDeviceName: str) -> tuple:
     """
@@ -471,6 +528,7 @@ def get_sub_location(ops: list, subDeviceName: str) -> tuple:
             return op, sub_loc
     return {}, {}
 
+
 def parse_stf_date(datestr: str) -> datetime:
     """
     Parses a date string in the format "%Y%m%d%H%M%S" to a datetime object.
@@ -483,6 +541,7 @@ def parse_stf_date(datestr: str) -> datetime:
         datetime: A datetime object representing the input date string.
     """
     return datetime.strptime(datestr, "%Y%m%d%H%M%S").replace(tzinfo=pytz.UTC)
+
 
 def get_battery_level(dev_name: str, ops: list) -> int:
     """
@@ -503,9 +562,11 @@ def get_battery_level(dev_name: str, ops: list) -> int:
                 try:
                     batt = int(batt_raw)
                 except ValueError:
-                    _LOGGER.warn(f"[{dev_name}]: Received invalid battery level: {batt_raw}")
+                    _LOGGER.warn(
+                        f"[{dev_name}]: Received invalid battery level: {batt_raw}")
             return batt
     return None
+
 
 def gen_qr_code_base64(data: str) -> str:
     """

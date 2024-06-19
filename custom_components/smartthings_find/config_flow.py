@@ -1,11 +1,26 @@
+from typing import Any, Dict
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.config_entries import ConfigEntry
-from .const import DOMAIN, CONF_JSESSIONID
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlowResult,
+    OptionsFlowWithConfigEntry
+)
+from .const import (
+    DOMAIN,
+    CONF_JSESSIONID,
+    CONF_UPDATE_INTERVAL,
+    CONF_UPDATE_INTERVAL_DEFAULT,
+    CONF_ACTIVE_MODE_SMARTTAGS,
+    CONF_ACTIVE_MODE_SMARTTAGS_DEFAULT,
+    CONF_ACTIVE_MODE_OTHERS,
+    CONF_ACTIVE_MODE_OTHERS_DEFAULT
+)
 from .utils import do_login_stage_one, do_login_stage_two, gen_qr_code_base64
 import asyncio
 import logging
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -120,3 +135,52 @@ class SmartThingsFindConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data_schema=vol.Schema({}),
             )
         return await self.async_step_user()
+    
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Create the options flow."""
+        return SmartThingsFindOptionsFlowHandler(config_entry)
+    
+    
+class SmartThingsFindOptionsFlowHandler(OptionsFlowWithConfigEntry):
+    """Handle an options flow."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle options flow."""
+
+        if user_input is not None:
+
+            res = self.async_create_entry(title="", data=user_input)
+
+            # Reload the integration entry to make sure the newly set options take effect
+            self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+            return res
+
+        data_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_UPDATE_INTERVAL,
+                    default=self.options.get(
+                        CONF_UPDATE_INTERVAL, CONF_UPDATE_INTERVAL_DEFAULT
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Clamp(min=30)),
+                vol.Optional(
+                    CONF_ACTIVE_MODE_SMARTTAGS,
+                    default=self.options.get(
+                        CONF_ACTIVE_MODE_SMARTTAGS, CONF_ACTIVE_MODE_SMARTTAGS_DEFAULT
+                    ),
+                ): bool,
+                vol.Optional(
+                    CONF_ACTIVE_MODE_OTHERS,
+                    default=self.options.get(
+                        CONF_ACTIVE_MODE_OTHERS, CONF_ACTIVE_MODE_OTHERS_DEFAULT
+                    ),
+                ): bool,
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=data_schema)

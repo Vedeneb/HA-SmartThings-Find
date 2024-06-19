@@ -14,7 +14,6 @@ This integration does **not** allow you to perform actions based on button press
 
 ## ⚠️ Warning/Disclaimer ⚠️
 
-- **Work in Progress**: This integration is still under development, and features may change without notice.
 - **API Limitations**: Created by reverse engineering the SmartThings Find API, this integration might stop working at any time if changes occur on the SmartThings side.
 - **Limited Testing**: The integration hasn't been thoroughly tested. If you encounter issues, please report them by creating an issue.
 - **Feature Constraints**: The integration can only support features available on the [SmartThings Find website](https://smartthingsfind.samsung.com/). For instance, stopping a SmartTag from ringing is not possible due to API limitations (while other devices do support this; not yet implemented)
@@ -26,6 +25,13 @@ The integration simulates Samsung login using QR code. It stores the retrieved J
 Being able to let a SmartTag ring depends on a phone/tablet nearby which forwards your request via Bluetooth. If your phone is not near your tag, you can't ring it. The location should still update if any Galaxy device is nearby. 
 
 If ringing your tag does not work, first try to let it ring from the [SmartThings Find website](https://smartthingsfind.samsung.com/). If it does not work from there, it can not work from Home Assistant too! Note that letting it ring with the SmartThings Mobile App is not the same as the website. Just because it does work in the App, does not mean it works on the web. So always use the web version to do your tests.
+
+## Notes on active/passive mode
+
+Starting with version 0.2.0, it is possible to configure whether to use the integration in an active or passive mode. In passive mode the integration only fetches the location from the server which was last reported to STF. In active mode the integration sends an actual "request location update" request. This will make the STF server try to connect to e.g. your phone, get the current location and send it back to the STF server from where the integration can then read it. This has quite a big impact on the devices battery and in some cases might also wake up the screen of the phone or tablet.
+
+By default active mode is enabled for SmatrtTags but disabled for any other devices. You can change this behaviour on the integrations page by clicking on `Configure`. Here you can also set the update interval, which is set to 120 seconds by default.
+
 
 ## Installation Instructions
 
