@@ -8,6 +8,7 @@ import asyncio
 import random
 import string
 import re
+import html
 from io import BytesIO
 from datetime import datetime, timedelta
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -249,6 +250,9 @@ async def get_devices(hass: HomeAssistant, session: aiohttp.ClientSession, entry
         devices_data = response_json["deviceList"]
         devices = []
         for device in devices_data:
+            # Double unescaping required. Example:
+            # "Benedev&amp;#39;s S22" first becomes "Benedev&#39;s S22" and then "Benedev's S22"
+            device['modelName'] = html.unescape(html.unescape(device['modelName']))
             identifier = (DOMAIN, device['dvceID'])
             ha_dev = device_registry.async_get(hass).async_get_device({identifier})
             if ha_dev and ha_dev.disabled:
