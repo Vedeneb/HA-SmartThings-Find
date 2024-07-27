@@ -136,6 +136,9 @@ class SmartThingsFindConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         return await self.async_step_user()
     
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        return await self.async_step_reauth_confirm(self)
+    
     @staticmethod
     @callback
     def async_get_options_flow(
