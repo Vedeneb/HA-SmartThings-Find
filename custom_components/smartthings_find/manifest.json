@@ -2,7 +2,7 @@
   "domain": "smartthings_find",
   "name": "SmartThings Find",
   "after_dependencies": ["http"],
-  "version": "0.2.0",
+  "version": "0.2.1",
   "documentation": "https://github.com/Vedeneb/HA-SmartThings-Find",
   "issue_tracker": "https://github.com/Vedeneb/HA-SmartThings-Find/issues",
   "integration_type": "hub",
